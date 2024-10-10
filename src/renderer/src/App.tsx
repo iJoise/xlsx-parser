@@ -19,7 +19,6 @@ const xThemeComponents = {
 
 function App(props: { disableCustomTheme?: boolean }) {
   const [parsedXLSX, setParsedXLSX] = useState<any[]>([])
-  const [filename, setFilename] = useState('')
   const loading = false
 
   useEffect(() => {
@@ -43,7 +42,7 @@ function App(props: { disableCustomTheme?: boolean }) {
     return []
   }, [parsedXLSX])
 
-  const handleExport = () => {
+  const handleExport = (): void => {
     const exportData = parsedXLSX.map(({ id, ...rest }) => rest)
     const worksheet = XLSX.utils.json_to_sheet(exportData)
 
@@ -53,7 +52,7 @@ function App(props: { disableCustomTheme?: boolean }) {
 
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Таблица')
 
-    XLSX.writeFile(workbook, `Сгенерированный отчёт ${dayjs().format('DD-MM-YYYY.HH:mm')}.xlsx`)
+    XLSX.writeFile(workbook, `Отчёт от ${dayjs().format('DD-MM-YYYY.HH:mm')}.xlsx`)
   }
 
   const onFileLoad = (data: any[]) => {
@@ -74,7 +73,7 @@ function App(props: { disableCustomTheme?: boolean }) {
           overflow: 'auto'
         })}
       >
-        <Header onFileLoad={onFileLoad} setFileName={(name: string) => setFilename(name)} />
+        <Header onFileLoad={onFileLoad} />
         <Box sx={{ p: 5 }}>
           <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
             <Button

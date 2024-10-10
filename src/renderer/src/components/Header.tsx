@@ -10,18 +10,15 @@ import { filteredXLSX, getUnicArticleAndSum } from '../utils'
 
 type HeaderPropsType = {
   onFileLoad: (value: any[]) => void
-  setFileName: (value: string) => void
 }
 
-export default function Header({ onFileLoad, setFileName }: HeaderPropsType) {
+export default function Header({ onFileLoad }: HeaderPropsType) {
   const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) {
       return
     }
     const file = e.target.files[0]
     if (file) {
-      setFileName(file.name)
-
       const reader = new FileReader()
       reader.onload = (event) => {
         const data = new Uint8Array(event?.target?.result as ArrayBufferLike)
@@ -36,7 +33,7 @@ export default function Header({ onFileLoad, setFileName }: HeaderPropsType) {
 
           onFileLoad(mergedData)
 
-          enqueueSnackbar('Загрузка успешно', {
+          enqueueSnackbar('Успешная загрузка файла', {
             variant: 'success'
           })
         }

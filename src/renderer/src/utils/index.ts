@@ -6,7 +6,7 @@ const keys = [
   'Расходы на обработку и доставку товаров до покупателя, руб.'
 ]
 
-export const filteredXLSX = (jsonData: any[]) => {
+export const filteredXLSX = (jsonData: any[]): any[] => {
   const filteredData = jsonData.map((obj: any) => {
     return Object.keys(obj)
       .filter((key) => keys.includes(key))
@@ -19,9 +19,9 @@ export const filteredXLSX = (jsonData: any[]) => {
   return filteredData
 }
 
-const isNumeric = (value: string | number) => typeof value === 'number' && !isNaN(value)
+const isNumeric = (value: string | number): boolean => typeof value === 'number' && !isNaN(value)
 
-export const getUnicArticleAndSum = (filteredData: any[]) => {
+export const getUnicArticleAndSum = (filteredData: any[]): any[] => {
   const result = filteredData
     .filter((item) => !!item['Артикул'])
     .reduce((acc, item) => {
