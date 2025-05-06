@@ -5,7 +5,7 @@ import CloudUploadRoundedIcon from '@mui/icons-material/CloudUploadRounded'
 import { ChangeEvent } from 'react'
 import { enqueueSnackbar } from 'notistack'
 import * as XLSX from 'xlsx'
-import { filteredXLSX, getUnicArticleAndSum } from '../utils'
+import { filteredXLSX, getUniqueArticleAndSumWithMergedColumns } from "../utils";
 import Box from '@mui/material/Box'
 
 type HeaderPropsType = {
@@ -37,7 +37,7 @@ export default function Header({ onFileLoad, onClearState }: HeaderPropsType) {
             return
           }
 
-          const mergedData = getUnicArticleAndSum(filteredData, type)
+          const mergedData = getUniqueArticleAndSumWithMergedColumns(filteredData, type)
 
           if (!mergedData.length) {
             enqueueSnackbar('После обработки файла данные отсутствуют', {

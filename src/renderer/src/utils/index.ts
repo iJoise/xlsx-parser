@@ -10,7 +10,8 @@ const newKeys = [
   'Код товара продавца',
   'Реализовано на сумму, руб.',
   'Выплаты по механикам лояльности партнёров, руб.',
-  'Баллы за скидки'
+  'Баллы за скидки',
+  'Базовое вознаграждение Ozon, руб.'
 ]
 
 export const filteredXLSX = (jsonData: any[], type: 'old' | 'new'): any[] => {
@@ -52,12 +53,10 @@ export const getUnicArticleAndSum = (filteredData: any[], type: 'old' | 'new'): 
           }
         })
       } else {
-        // Создаем базовый объект с первым полем (артикулом/кодом товара)
         const newItem = {
           [filteredKeys[0]]: item[filteredKeys[0]]
         }
 
-        // Добавляем остальные поля на основе количества ключей
         for (let i = 1; i < keysCount; i++) {
           newItem[filteredKeys[i]] = isNumeric(item[filteredKeys[i]]) ? item[filteredKeys[i]] : 0
         }
@@ -71,7 +70,6 @@ export const getUnicArticleAndSum = (filteredData: any[], type: 'old' | 'new'): 
   return Object.values<any>(result).map((item: Record<string, number>, index) => {
     const resultItem = { ...item, id: index }
 
-    // Округляем числовые значения
     for (let i = 1; i < keysCount; i++) {
       if (isNumeric(resultItem[filteredKeys[i]])) {
         resultItem[filteredKeys[i]] = parseFloat(resultItem[filteredKeys[i]].toFixed(2))
@@ -79,5 +77,41 @@ export const getUnicArticleAndSum = (filteredData: any[], type: 'old' | 'new'): 
     }
 
     return resultItem
+  })
+}
+
+export const getUniqueArticleAndSumWithMergedColumns = (
+  filteredData: any[],
+  type: 'old' | 'new'
+): any[] => {
+  if (type === 'old') {
+    return getUnicArticleAndSum(filteredData, type)
+  }
+
+  const columnsToMerge = [
+    'Реализовано на сумму, руб.',
+    'Выплаты по механикам лояльности партнёров, руб.',
+    'Баллы за скидки'
+  ]
+  const targetColumn = 'Реализовано на сумму, руб.'
+
+  const initialResults = getUnicArticleAndSum(filteredData, type)
+
+  return initialResults.map((item) => {
+    const newItem = { ...item }
+
+    let totalSum = 0
+    columnsToMerge.forEach((column) => {
+      if (isNumeric(newItem[column])) {
+        totalSum += newItem[column]
+        if (column !== targetColumn) {
+          delete newItem[column]
+        }
+      }
+    })
+
+    newItem[targetColumn] = parseFloat(totalSum.toFixed(2))
+
+    return newItem
   })
 }

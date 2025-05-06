@@ -1,9 +1,9 @@
 {
   "name": "xlsx-parser",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "main": "./out/main/index.js",
-  "author": "example.com",
-  "homepage": "https://electron-vite.org",
+  "author": "iJoise",
+  "homepage": "https://github.com/iJoise",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint . --ext .js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
