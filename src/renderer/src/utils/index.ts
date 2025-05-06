@@ -6,52 +6,78 @@ const keys = [
   'Расходы на обработку и доставку товаров до покупателя, руб.'
 ]
 
-export const filteredXLSX = (jsonData: any[]): any[] => {
-  const filteredData = jsonData.map((obj: any) => {
-    return Object.keys(obj)
-      .filter((key) => keys.includes(key))
-      .reduce((acc, key) => {
-        acc[key] = obj[key]
-        return acc
-      }, {} as any)
-  })
+const newKeys = [
+  'Код товара продавца',
+  'Реализовано на сумму, руб.',
+  'Выплаты по механикам лояльности партнёров, руб.',
+  'Баллы за скидки'
+]
 
-  return filteredData
+export const filteredXLSX = (jsonData: any[], type: 'old' | 'new'): any[] => {
+  const filteredKeys = type === 'old' ? keys : newKeys
+
+  return jsonData
+    .map((obj: any) => {
+      const filteredObj = Object.keys(obj)
+        .filter((key) => filteredKeys.includes(key))
+        .reduce((acc, key) => {
+          acc[key] = obj[key]
+          return acc
+        }, {} as any)
+
+      if (Object.keys(filteredObj).length === 0) {
+        console.warn('Объект не содержит ожидаемых ключей:', obj)
+      }
+
+      return filteredObj
+    })
+    .filter((obj) => Object.keys(obj).length > 0) // Исключаем пустые объекты
 }
 
 const isNumeric = (value: string | number): boolean => typeof value === 'number' && !isNaN(value)
 
-export const getUnicArticleAndSum = (filteredData: any[]): any[] => {
+export const getUnicArticleAndSum = (filteredData: any[], type: 'old' | 'new'): any[] => {
+  const filteredKeys = type === 'old' ? keys : newKeys
+  const keysCount = filteredKeys.length
+
   const result = filteredData
-    .filter((item) => !!item['Артикул'])
+    .filter((item) => !!item[filteredKeys[0]])
     .reduce((acc, item) => {
-      const article = item[keys[0]]
+      const article = item[filteredKeys[0]]
 
       if (acc[article]) {
-        keys.slice(1).forEach((key) => {
+        filteredKeys.slice(1).forEach((key) => {
           if (isNumeric(item[key])) {
             acc[article][key] += item[key]
           }
         })
       } else {
-        acc[article] = {
-          [keys[0]]: item[keys[0]],
-          [keys[1]]: isNumeric(item[keys[1]]) ? item[keys[1]] : 0,
-          [keys[2]]: isNumeric(item[keys[2]]) ? item[keys[2]] : 0,
-          [keys[3]]: isNumeric(item[keys[3]]) ? item[keys[3]] : 0,
-          [keys[4]]: isNumeric(item[keys[4]]) ? item[keys[4]] : 0
+        // Создаем базовый объект с первым полем (артикулом/кодом товара)
+        const newItem = {
+          [filteredKeys[0]]: item[filteredKeys[0]]
         }
+
+        // Добавляем остальные поля на основе количества ключей
+        for (let i = 1; i < keysCount; i++) {
+          newItem[filteredKeys[i]] = isNumeric(item[filteredKeys[i]]) ? item[filteredKeys[i]] : 0
+        }
+
+        acc[article] = newItem
       }
 
       return acc
     }, {})
 
-  return Object.values<any>(result).map((item: Record<string, number>, index) => ({
-    ...item,
-    [keys[1]]: parseFloat(item[keys[1]].toFixed(2)),
-    [keys[2]]: parseFloat(item[keys[2]].toFixed(2)),
-    [keys[3]]: parseFloat(item[keys[3]].toFixed(2)),
-    [keys[4]]: parseFloat(item[keys[4]].toFixed(2)),
-    id: index
-  }))
+  return Object.values<any>(result).map((item: Record<string, number>, index) => {
+    const resultItem = { ...item, id: index }
+
+    // Округляем числовые значения
+    for (let i = 1; i < keysCount; i++) {
+      if (isNumeric(resultItem[filteredKeys[i]])) {
+        resultItem[filteredKeys[i]] = parseFloat(resultItem[filteredKeys[i]].toFixed(2))
+      }
+    }
+
+    return resultItem
+  })
 }

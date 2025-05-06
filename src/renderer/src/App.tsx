@@ -12,6 +12,7 @@ import { GridColDef } from '@mui/x-data-grid'
 import * as XLSX from 'xlsx'
 import Button from '@mui/material/Button'
 import dayjs from 'dayjs'
+import { enqueueSnackbar } from 'notistack'
 
 const xThemeComponents = {
   ...dataGridCustomizations
@@ -43,21 +44,44 @@ function App(props: { disableCustomTheme?: boolean }) {
   }, [parsedXLSX])
 
   const handleExport = (): void => {
-    const exportData = parsedXLSX.map(({ id, ...rest }) => rest)
-    const worksheet = XLSX.utils.json_to_sheet(exportData)
+    if (!parsedXLSX.length) {
+      enqueueSnackbar('Нет данных для экспорта', {
+        variant: 'error'
+      })
+      return
+    }
 
-    worksheet['!cols'] = [{ wch: 25 }, { wch: 48 }, { wch: 50 }, { wch: 38 }, { wch: 40 }]
+    try {
+      const exportData = parsedXLSX.map(({ id, ...rest }) => rest)
+      const worksheet = XLSX.utils.json_to_sheet(exportData)
 
-    const workbook = XLSX.utils.book_new()
+      worksheet['!cols'] = [{ wch: 25 }, { wch: 48 }, { wch: 50 }, { wch: 38 }, { wch: 40 }]
 
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Таблица')
+      const workbook = XLSX.utils.book_new()
 
-    XLSX.writeFile(workbook, `Отчёт от ${dayjs().format('DD-MM-YYYY.HH:mm')}.xlsx`)
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Таблица')
+
+      XLSX.writeFile(workbook, `Отчёт от ${dayjs().format('DD-MM-YYYY.HH:mm')}.xlsx`)
+      enqueueSnackbar('Экспорт выполнен успешно', {
+        variant: 'success'
+      })
+    } catch (error) {
+      console.error('Ошибка при экспорте данных: ', error)
+      enqueueSnackbar('Ошибка при экспорте данных', {
+        variant: 'error'
+      })
+    }
   }
 
-  const onFileLoad = (data: any[]) => {
-    const res = data.sort((a, b) => a['Артикул'].localeCompare(b['Артикул']))
+  const onFileLoad = (data: any[], type: 'old' | 'new') => {
+    const sortType = type === 'old' ? 'Артикул' : 'Код товара продавца'
+    const res = data.sort((a, b) => a[sortType].localeCompare(b[sortType]))
+
     setParsedXLSX(res)
+  }
+
+  const handleClearState = (): void => {
+    setParsedXLSX([])
   }
 
   return (
@@ -73,7 +97,7 @@ function App(props: { disableCustomTheme?: boolean }) {
           overflow: 'auto'
         })}
       >
-        <Header onFileLoad={onFileLoad} />
+        <Header onFileLoad={onFileLoad} onClearState={handleClearState} />
         <Box sx={{ p: 5 }}>
           <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
             <Button

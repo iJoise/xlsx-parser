@@ -1,4 +1,3 @@
-import Stack from '@mui/material/Stack'
 import { ColorModeButton } from '../theme/ColorModeButton'
 import Paper from '@mui/material/Paper'
 import { Button } from '@mui/material'
@@ -7,13 +6,15 @@ import { ChangeEvent } from 'react'
 import { enqueueSnackbar } from 'notistack'
 import * as XLSX from 'xlsx'
 import { filteredXLSX, getUnicArticleAndSum } from '../utils'
+import Box from '@mui/material/Box'
 
 type HeaderPropsType = {
-  onFileLoad: (value: any[]) => void
+  onFileLoad: (value: any[], type: 'old' | 'new') => void
+  onClearState: () => void // Новый проп для очищения состояния
 }
 
-export default function Header({ onFileLoad }: HeaderPropsType) {
-  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+export default function Header({ onFileLoad, onClearState }: HeaderPropsType) {
+  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>, type: 'old' | 'new') => {
     if (!e.target.files) {
       return
     }
@@ -21,20 +22,38 @@ export default function Header({ onFileLoad }: HeaderPropsType) {
     if (file) {
       const reader = new FileReader()
       reader.onload = (event) => {
-        const data = new Uint8Array(event?.target?.result as ArrayBufferLike)
-        const workbook = XLSX.read(data, { type: 'array' })
-        const sheetName = workbook.SheetNames[0]
-        const sheet = workbook.Sheets[sheetName]
-        const jsonData = XLSX.utils.sheet_to_json(sheet)
-        const filteredData = filteredXLSX(jsonData)
+        try {
+          const data = new Uint8Array(event?.target?.result as ArrayBufferLike)
+          const workbook = XLSX.read(data, { type: 'array' })
+          const sheetName = workbook.SheetNames[0]
+          const sheet = workbook.Sheets[sheetName]
+          const jsonData = XLSX.utils.sheet_to_json(sheet)
+          const filteredData = filteredXLSX(jsonData, type)
 
-        if (filteredData.length) {
-          const mergedData = getUnicArticleAndSum(filteredData)
+          if (!filteredData.length) {
+            enqueueSnackbar('Файл не содержит данных в ожидаемом формате', {
+              variant: 'error'
+            })
+            return
+          }
 
-          onFileLoad(mergedData)
+          const mergedData = getUnicArticleAndSum(filteredData, type)
 
+          if (!mergedData.length) {
+            enqueueSnackbar('После обработки файла данные отсутствуют', {
+              variant: 'error'
+            })
+            return
+          }
+
+          onFileLoad(mergedData, type)
           enqueueSnackbar('Успешная загрузка файла', {
             variant: 'success'
+          })
+        } catch (error) {
+          console.error('Ошибка при обработке файла: ', error)
+          enqueueSnackbar('Ошибка при обработке файла. Проверьте его структуру.', {
+            variant: 'error'
           })
         }
       }
@@ -52,7 +71,7 @@ export default function Header({ onFileLoad }: HeaderPropsType) {
         px: 5
       }}
     >
-      <Stack sx={{ p: 2 }}>
+      <Box sx={{ p: 2, display: 'flex' }}>
         <Button
           component="label"
           variant="outlined"
@@ -61,11 +80,43 @@ export default function Header({ onFileLoad }: HeaderPropsType) {
           size="large"
           sx={{ marginRight: '1rem' }}
         >
-          Загрузить файл XLS
-          <input type="file" accept=".xlsx, .xls" hidden onChange={handleFileUpload} />
+          Загрузить файл XLS (старый)
+          <input
+            type="file"
+            accept=".xlsx, .xls"
+            hidden
+            onChange={(e) => handleFileUpload(e, 'old')}
+          />
         </Button>
-      </Stack>
-      <ColorModeButton />
+        <Button
+          component="label"
+          variant="contained"
+          color="success"
+          startIcon={<CloudUploadRoundedIcon />}
+          size="large"
+          sx={{ marginRight: '1rem' }}
+        >
+          Загрузить файл XLS (новый)
+          <input
+            type="file"
+            accept=".xlsx, .xls"
+            hidden
+            onChange={(e) => handleFileUpload(e, 'new')}
+          />
+        </Button>
+      </Box>
+      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <Button
+          variant="contained"
+          color="error"
+          size="large"
+          sx={{ marginRight: '1rem' }}
+          onClick={onClearState} // Обработчик для очищения состояния
+        >
+          Очистить
+        </Button>
+        <ColorModeButton />
+      </Box>
     </Paper>
   )
 }
